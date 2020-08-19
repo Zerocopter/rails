@@ -1,0 +1,15 @@
+<header>
+  <h1>Blocked request: <%= @request.method %> <%= @request.host %></h1>
+</header>
+<div id="container">
+  <h2>
+    Request <%= @request.method %> <%= @request.host %> with the following
+    HTTP headers violates the site's Resource Isolation Policy:
+  </h2>
+  <pre>
+    <% @request.headers.each do |header_name, value| %>
+      <% next unless header_name.match(/\AHTTP_SEC/) %>
+      <%= "#{header_name}: #{value}" %>
+    <% end %>
+  </pre>
+</div>
