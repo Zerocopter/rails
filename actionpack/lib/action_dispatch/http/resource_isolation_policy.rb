@@ -109,6 +109,8 @@ module ActionDispatch #:nodoc:
       end
     end
 
+    DEFAULT_SAME_SITE_POLICY = true
+
     attr_writer :same_site
 
     def initialize
@@ -116,8 +118,7 @@ module ActionDispatch #:nodoc:
     end
 
     def same_site?
-      # True by default.
-      @same_site.nil? ? true : @same_site
+      @same_site.nil? ? DEFAULT_SAME_SITE_POLICY : @same_site
     end
   end
 end
