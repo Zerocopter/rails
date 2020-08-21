@@ -288,6 +288,7 @@ module Rails
           "action_dispatch.content_security_policy_nonce_generator" => config.content_security_policy_nonce_generator,
           "action_dispatch.content_security_policy_nonce_directives" => config.content_security_policy_nonce_directives,
           "action_dispatch.feature_policy" => config.feature_policy,
+          "action_dispatch.resource_isolation_policy" => config.resource_isolation_policy
         )
       end
     end

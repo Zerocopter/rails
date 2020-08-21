@@ -22,7 +22,7 @@ module Rails
                     :read_encrypted_secrets, :log_level, :content_security_policy_report_only,
                     :content_security_policy_nonce_generator, :content_security_policy_nonce_directives,
                     :require_master_key, :credentials, :disable_sandbox, :add_autoload_paths_to_load_path,
-                    :rake_eager_load
+                    :rake_eager_load, :resource_isolation_policy
 
       attr_reader :encoding, :api_only, :loaded_config_version, :autoloader
 
@@ -64,6 +64,7 @@ module Rails
         @content_security_policy_report_only     = false
         @content_security_policy_nonce_generator = nil
         @content_security_policy_nonce_directives = nil
+        @resource_isolation_policy               = nil
         @require_master_key                      = false
         @loaded_config_version                   = nil
         @credentials                             = ActiveSupport::OrderedOptions.new
@@ -331,6 +332,14 @@ module Rails
           @feature_policy = ActionDispatch::FeaturePolicy.new(&block)
         else
           @feature_policy
+        end
+      end
+
+      def resource_isolation_policy(&block)
+        if block_given?
+          @resource_isolation_policy = ActionDispatch::ResourceIsolationPolicy.new(&block)
+        else
+          @resource_isolation_policy
         end
       end
 
