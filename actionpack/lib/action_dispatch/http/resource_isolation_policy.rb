@@ -6,8 +6,9 @@ module ActionDispatch #:nodoc:
   class ResourceIsolationPolicy
     class Middleware
       class Permissions
-        def initialize(request)
+        def initialize(request, assets_prefix)
           @request = request
+          @assets_prefix = assets_prefix
         end
 
         def allowed?
@@ -16,38 +17,36 @@ module ActionDispatch #:nodoc:
 
         private
 
-        attr_reader :request
+        attr_reader :request, :assets_prefix
 
         def site_allowed?
-          sec_fetch_site.in?(allowed_sites)
+          allowed_sites.include?(sec_fetch_site)
         end
 
         def get_navigation?
-          get? && navigate? && document_frame_or_iframe?
+          get? && navigate? && document?
         end
 
         def asset?
-          request.
-            original_fullpath.
-            starts_with?(Rails.application.config.assets.prefix)
+          request.fullpath.start_with?(assets_prefix)
         end
 
         def allowed_sites
           sites = %w(same-origin none)
-          sites << "same-site" if request.resource_isolation_policy.same_site?
+          sites << "same-site" if request.resource_isolation_policy.same_site
           sites
         end
 
         def get?
-          request.method == "get"
+          request.method == "GET"
         end
 
         def navigate?
           sec_fetch_mode == "navigate"
         end
 
-        def document_frame_or_iframe?
-          sec_fetch_dest.in?(%w(document frame iframe))
+        def document?
+          sec_fetch_dest == "document"
         end
 
         def sec_fetch_site
@@ -63,8 +62,8 @@ module ActionDispatch #:nodoc:
         end
       end
 
-      FORBIDDEN_RESPONSE_APP = -> env do
-        request = Request.new(env)
+      FORBIDDEN_RESPONSE_APP = ->(env) do
+        request = ActionDispatch::Request.new(env)
         format = request.xhr? ? "text/plain" : "text/html"
         template = DebugView.new(request: request)
         body = template.render(
@@ -78,22 +77,28 @@ module ActionDispatch #:nodoc:
         }, [body]]
       end
 
-      def initialize(app)
+      def initialize(app, assets_prefix)
         @app = app
+        @assets_prefix = assets_prefix
       end
 
       def call(env)
+        response_app(env).call(env)
+      end
+
+      private
+
+      attr_reader :app, :assets_prefix
+
+      def response_app(env)
         request = ActionDispatch::Request.new(env)
 
-        response_app = if !request.resource_isolation_policy ||
-                          Permissions.new(request).allowed?
-
-                         @app
-                       else
-                         FORBIDDEN_RESPONSE_APP
-                       end
-
-        response_app.call(env)
+        if !request.resource_isolation_policy ||
+           Permissions.new(request, assets_prefix).allowed?
+          app
+        else
+          FORBIDDEN_RESPONSE_APP
+        end
       end
     end
 
@@ -111,14 +116,12 @@ module ActionDispatch #:nodoc:
 
     DEFAULT_SAME_SITE_POLICY = true
 
-    attr_writer :same_site
+    attr_accessor :same_site
 
     def initialize
-      yield self if block_given?
-    end
+      @same_site = DEFAULT_SAME_SITE_POLICY
 
-    def same_site?
-      @same_site.nil? ? DEFAULT_SAME_SITE_POLICY : @same_site
+      yield self if block_given?
     end
   end
 end
