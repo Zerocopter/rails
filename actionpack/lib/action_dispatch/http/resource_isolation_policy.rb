@@ -11,13 +11,17 @@ module ActionDispatch #:nodoc:
           @assets_prefix = assets_prefix
         end
 
-        def allowed?
-          !sec_fetch_site || site_allowed? || get_navigation? || asset?
+        def forbidden?
+          !allowed?
         end
 
         private
 
         attr_reader :request, :assets_prefix
+
+        def allowed?
+          !sec_fetch_site || site_allowed? || get_navigation? || asset?
+        end
 
         def site_allowed?
           allowed_sites.include?(sec_fetch_site)
@@ -62,8 +66,7 @@ module ActionDispatch #:nodoc:
         end
       end
 
-      FORBIDDEN_RESPONSE_APP = ->(env) do
-        request = ActionDispatch::Request.new(env)
+      FORBIDDEN_RESPONSE_APP = ->(request) do
         format = request.xhr? ? "text/plain" : "text/html"
         template = DebugView.new(request: request)
         body = template.render(
@@ -83,23 +86,21 @@ module ActionDispatch #:nodoc:
       end
 
       def call(env)
-        response_app(env).call(env)
+        request = ActionDispatch::Request.new(env)
+        _, headers, _ = response = @app.call(env)
+
+        if request.resource_isolation_policy &&
+           Permissions.new(request, assets_prefix).forbidden?
+
+          response = FORBIDDEN_RESPONSE_APP.call(request)
+        end
+
+        response
       end
 
       private
 
       attr_reader :app, :assets_prefix
-
-      def response_app(env)
-        request = ActionDispatch::Request.new(env)
-
-        if !request.resource_isolation_policy ||
-           Permissions.new(request, assets_prefix).allowed?
-          app
-        else
-          FORBIDDEN_RESPONSE_APP
-        end
-      end
     end
 
     module Request
@@ -114,7 +115,7 @@ module ActionDispatch #:nodoc:
       end
     end
 
-    DEFAULT_SAME_SITE_POLICY = true
+    DEFAULT_SAME_SITE_POLICY = false
 
     attr_accessor :same_site
 
