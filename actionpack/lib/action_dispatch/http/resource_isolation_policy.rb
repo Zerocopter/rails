@@ -90,6 +90,10 @@ module ActionDispatch #:nodoc:
         if request.resource_isolation_policy &&
            Permissions.new(request, assets_prefix).forbidden?
 
+          if request.resource_isolation_policy.log_warning_on_fetch_metadata_failure
+            logger.warn "Fetch Metadata header didn't match request"
+          end
+
           response = FORBIDDEN_RESPONSE_APP.call(request)
         end
 
@@ -97,6 +101,10 @@ module ActionDispatch #:nodoc:
       end
 
       private
+
+      def logger
+        ActiveSupport::Logger.new($stderr)
+      end
 
       attr_reader :app, :assets_prefix
     end
@@ -115,10 +123,11 @@ module ActionDispatch #:nodoc:
 
     DEFAULT_SAME_SITE_POLICY = false
 
-    attr_accessor :same_site
+    attr_accessor :same_site, :log_warning_on_fetch_metadata_failure
 
     def initialize
       @same_site = DEFAULT_SAME_SITE_POLICY
+      self.log_warning_on_fetch_metadata_failure = true
 
       yield self if block_given?
     end

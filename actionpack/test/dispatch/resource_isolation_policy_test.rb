@@ -28,7 +28,9 @@ class ResourceIsolationPolicyTest
       end
 
       def call(env)
-        env["action_dispatch.resource_isolation_policy"] = ActionDispatch::ResourceIsolationPolicy.new
+        env["action_dispatch.resource_isolation_policy"] = ActionDispatch::ResourceIsolationPolicy.new do |policy|
+          policy.log_warning_on_fetch_metadata_failure = false
+        end
         @app.call(env)
       end
     end
@@ -106,7 +108,6 @@ class ResourceIsolationPolicyTest
         "sec-fetch-dest": "document",
         "sec-fetch-mode": "navigate"
       }
-
       assert_response 403
       assert_match "Blocked request: POST /", response.body
     end
@@ -245,6 +246,7 @@ class ResourceIsolationPolicyTest
       def call(env)
         env["action_dispatch.resource_isolation_policy"] = ActionDispatch::ResourceIsolationPolicy.new do |policy|
           policy.same_site = false
+          policy.log_warning_on_fetch_metadata_failure = false
         end
         @app.call(env)
       end
