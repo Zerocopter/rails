@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "action_view"
+
 module ActionDispatch #:nodoc:
   class ResourceIsolationPolicy
     class Middleware
@@ -91,7 +93,7 @@ module ActionDispatch #:nodoc:
            Permissions.new(request, assets_prefix).forbidden?
 
           if request.resource_isolation_policy.log_warning_on_fetch_metadata_failure
-            logger.warn "Fetch Metadata header didn't match request"
+            logger(request).warn "Fetch Metadata header didn't match request"
           end
 
           response = FORBIDDEN_RESPONSE_APP.call(request)
@@ -102,8 +104,8 @@ module ActionDispatch #:nodoc:
 
       private
 
-      def logger
-        ActiveSupport::Logger.new($stderr)
+      def logger(request)
+        request.logger || ActionView::Base.logger || ActiveSupport::Logger.new($stderr)
       end
 
       attr_reader :app, :assets_prefix
