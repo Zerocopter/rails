@@ -1166,6 +1166,39 @@ for allowing inline `<script>` tags.
 This is used by the Rails UJS helper to create dynamically
 loaded inline `<script>` elements.
 
+### Fetch Metadata Request Headers
+
+Rails also provides a DSL to handle [Fetch Metadata Request Headers](https://developer.mozilla.org/en-US/docs/Glossary/Fetch_Metadata_Request_Header) in your application. As with CSP, you can configure a global default policy and then override it on a per-controller basis. Requests with HTTP headers that don't comply with the policy will be forbidden using a 403 response.
+
+The default policy allows requests that either:
+- do not provide fetch metadata headers at all (older browsers)
+- were initialized in the browser's address bar
+- come from the same origin (the same host, the same sub-domain and the same port)
+- use GET requests to load the requested content into the client's document (e.g. by clicking on a link)
+- load public assets served by the application
+
+Example global policy:
+
+```ruby
+# config/initializers/fetch_metadata_policy.rb
+Rails.application.config.fetch_metadata_policy = true
+```
+
+Example controller overrides:
+
+```ruby
+# Disable policy inline
+class APIController < ApplicationController
+  fetch_metadata_policy false
+end
+
+# Allow "same-site" destinations (requests from other sub-domains and/or ports)
+class PostsController < ApplicationController
+  fetch_metadata_policy do |p|
+    p.same_site = true
+  end
+end
+
 Environmental Security
 ----------------------
 
