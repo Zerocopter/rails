@@ -4,7 +4,7 @@ require "isolation/abstract_unit"
 require "rack/test"
 
 module ApplicationTests
-  class ResourceIsolationPolicyTest < ActiveSupport::TestCase
+  class FetchMetadataPolicyTest < ActiveSupport::TestCase
     include ActiveSupport::Testing::Isolation
     include Rack::Test::Methods
 
@@ -48,8 +48,8 @@ module ApplicationTests
         end
       RUBY
 
-      app_file "config/initializers/resource_isolation_policy.rb", <<-RUBY
-        Rails.application.config.resource_isolation_policy do |p|
+      app_file "config/initializers/fetch_metadata_policy.rb", <<-RUBY
+        Rails.application.config.fetch_metadata_policy do |p|
           p.same_site = true
         end
       RUBY
@@ -71,7 +71,7 @@ module ApplicationTests
     test "override resource isolation policy using same directive in a controller" do
       controller :pages, <<-RUBY
         class PagesController < ApplicationController
-          resource_isolation_policy do |p|
+          fetch_metadata_policy do |p|
             p.same_site = false
           end
 
@@ -81,8 +81,8 @@ module ApplicationTests
         end
       RUBY
 
-      app_file "config/initializers/resource_isolation_policy.rb", <<-RUBY
-        Rails.application.config.resource_isolation_policy do |p|
+      app_file "config/initializers/fetch_metadata_policy.rb", <<-RUBY
+        Rails.application.config.fetch_metadata_policy do |p|
           p.same_site = true
         end
       RUBY

@@ -2,7 +2,7 @@
 
 require "abstract_unit"
 
-class ResourceIsolationPolicyTest
+class FetchMetadataPolicyTest
   class PolicyController < ActionController::Base
     def index
       render plain: "Success"
@@ -15,20 +15,20 @@ class ResourceIsolationPolicyTest
 
   ROUTES = ActionDispatch::Routing::RouteSet.new
   ROUTES.draw do
-    scope module: "resource_isolation_policy_integration_test" do
+    scope module: "fetch_metadata_policy_integration_test" do
       get "/", to: PolicyController.action(:index)
       get "/assets/bogus", to: PolicyController.action(:bogus_asset)
     end
   end
 
-  class SameSiteResourceIsolationPolicyTest < ActionDispatch::IntegrationTest
+  class SameSiteFetchMetadataPolicyTest < ActionDispatch::IntegrationTest
     class PolicyConfigMiddleware
       def initialize(app)
         @app = app
       end
 
       def call(env)
-        env["action_dispatch.resource_isolation_policy"] = ActionDispatch::ResourceIsolationPolicy.new do |policy|
+        env["action_dispatch.fetch_metadata_policy"] = ActionDispatch::ResourceIsolationPolicy.new do |policy|
           policy.log_warning_on_failure = false
         end
         @app.call(env)
@@ -37,7 +37,7 @@ class ResourceIsolationPolicyTest
 
     APP = build_app(ROUTES) do |middleware|
       middleware.use PolicyConfigMiddleware
-      middleware.use ActionDispatch::ResourceIsolationPolicy::Middleware, "/assets"
+      middleware.use ActionDispatch::FetchMetadataPolicy::Middleware, "/assets"
     end
 
     def app
@@ -69,13 +69,13 @@ class ResourceIsolationPolicyTest
       assert_match "Success", response.body
     end
 
-    test "doesn't block requests with sec-fetch-site == 'same-site'" do
+    test "blocks requests with sec-fetch-site == 'same-site'" do
       get "/", env: {
         "sec-fetch-site": "same-site"
       }
 
-      assert_response 200
-      assert_match "Success", response.body
+      assert_response 403
+      assert_match "Blocked request: GET /", response.body
     end
 
     test "blocks requests with sec-fetch-site == 'cross-site'" do
@@ -237,15 +237,15 @@ class ResourceIsolationPolicyTest
     end
   end
 
-  class SameSiteDisallowedResourceIsolationPolicyTest < ActionDispatch::IntegrationTest
+  class SameSiteAllowedFetchMetadataPolicyTest < ActionDispatch::IntegrationTest
     class PolicyConfigMiddleware
       def initialize(app)
         @app = app
       end
 
       def call(env)
-        env["action_dispatch.resource_isolation_policy"] = ActionDispatch::ResourceIsolationPolicy.new do |policy|
-          policy.same_site = false
+        env["action_dispatch.fetch_metadata_policy"] = ActionDispatch::FetchMetadataPolicy.new do |policy|
+          policy.same_site = true
           policy.log_warning_on_failure = false
         end
         @app.call(env)
@@ -254,20 +254,20 @@ class ResourceIsolationPolicyTest
 
     APP = build_app(ROUTES) do |middleware|
       middleware.use PolicyConfigMiddleware
-      middleware.use ActionDispatch::ResourceIsolationPolicy::Middleware, "/assets"
+      middleware.use ActionDispatch::FetchMetadataPolicy::Middleware, "/assets"
     end
 
     def app
       APP
     end
 
-    test "blocks requests with sec-fetch-site == 'same-site'" do
+    test "doesn't block requests with sec-fetch-site == 'same-site'" do
       get "/", env: {
         "sec-fetch-site": "same-site"
       }
 
-      assert_response 403
-      assert_match "Blocked request: GET /", response.body
+      assert_response 200
+      assert_match "Success", response.body
     end
   end
 end
