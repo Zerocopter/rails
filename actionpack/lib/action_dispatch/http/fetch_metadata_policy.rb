@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ActionDispatch #:nodoc:
-  class ResourceIsolationPolicy
+  class FetchMetadataPolicy
     class Middleware
       class Permissions
         def initialize(request, assets_prefix)
@@ -9,17 +9,13 @@ module ActionDispatch #:nodoc:
           @assets_prefix = assets_prefix
         end
 
-        def forbidden?
-          !allowed?
+        def allowed?
+          !sec_fetch_site || site_allowed? || get_navigation? || asset?
         end
 
         private
 
         attr_reader :request, :assets_prefix
-
-        def allowed?
-          !sec_fetch_site || site_allowed? || get_navigation? || asset?
-        end
 
         def site_allowed?
           allowed_sites.include?(sec_fetch_site)
@@ -35,7 +31,7 @@ module ActionDispatch #:nodoc:
 
         def allowed_sites
           sites = %w(same-origin none)
-          sites << "same-site" if request.resource_isolation_policy.same_site
+          sites << "same-site" if request.fetch_metadata_policy.same_site
           sites
         end
 
@@ -85,15 +81,12 @@ module ActionDispatch #:nodoc:
 
       def call(env)
         request = ActionDispatch::Request.new(env)
-        _, headers, _ = response = @app.call(env)
+        response = @app.call(env)
 
-        if request.resource_isolation_policy &&
-           Permissions.new(request, assets_prefix).forbidden?
+        return response unless request.fetch_metadata_policy
+        return response if Permissions.new(request, assets_prefix).allowed?
 
-          response = FORBIDDEN_RESPONSE_APP.call(request)
-        end
-
-        response
+        FORBIDDEN_RESPONSE_APP.call(request)
       end
 
       private
@@ -102,13 +95,13 @@ module ActionDispatch #:nodoc:
     end
 
     module Request
-      POLICY = "action_dispatch.resource_isolation_policy"
+      POLICY = "action_dispatch.fetch_metadata_policy"
 
-      def resource_isolation_policy
+      def fetch_metadata_policy
         get_header(POLICY)
       end
 
-      def resource_isolation_policy=(policy)
+      def fetch_metadata_policy=(policy)
         set_header(POLICY, policy)
       end
     end
