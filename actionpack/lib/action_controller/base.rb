@@ -227,7 +227,7 @@ module ActionController
       RequestForgeryProtection,
       ContentSecurityPolicy,
       FeaturePolicy,
-      ResourceIsolationPolicy,
+      FetchMetadataPolicy,
       Streaming,
       DataStreaming,
       HttpAuthentication::Basic::ControllerMethods,

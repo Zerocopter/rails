@@ -44,7 +44,7 @@ module ActionController
     autoload :Renderers
     autoload :Rendering
     autoload :RequestForgeryProtection
-    autoload :ResourceIsolationPolicy
+    autoload :FetchMetadataPolicy
     autoload :Rescue
     autoload :Streaming
     autoload :StrongParameters
