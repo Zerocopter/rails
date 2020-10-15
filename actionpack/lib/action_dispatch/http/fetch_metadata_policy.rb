@@ -83,12 +83,12 @@ module ActionDispatch #:nodoc:
 
       def call(env)
         request = ActionDispatch::Request.new(env)
-        response = @app.call(env)
+        response = app.call(env)
 
         return response unless request.fetch_metadata_policy
         return response if Permissions.new(request, assets_prefix).allowed?
 
-        if request.resource_isolation_policy.log_warning_on_failure
+        if request.fetch_metadata_policy.log_warning_on_failure
           logger(request).warn "Fetch Metadata header didn't match request"
         end
         FORBIDDEN_RESPONSE_APP.call(request)
@@ -96,11 +96,13 @@ module ActionDispatch #:nodoc:
 
       private
 
-      def logger(request)
-        request.logger || ActionView::Base.logger || ActiveSupport::Logger.new($stderr)
-      end
-
       attr_reader :app, :assets_prefix
+
+      def logger(request)
+        request.logger ||
+          ActionView::Base.logger ||
+          ActiveSupport::Logger.new($stderr)
+      end
     end
 
     module Request
@@ -116,12 +118,13 @@ module ActionDispatch #:nodoc:
     end
 
     DEFAULT_SAME_SITE_POLICY = false
+    DEFAUT_LOG_WARNING_ON_FAILURE = true
 
     attr_accessor :same_site, :log_warning_on_failure
 
     def initialize
       self.same_site = DEFAULT_SAME_SITE_POLICY
-      self.log_warning_on_failure = true
+      self.log_warning_on_failure = DEFAUT_LOG_WARNING_ON_FAILURE
 
       yield self if block_given?
     end
