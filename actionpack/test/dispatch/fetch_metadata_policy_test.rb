@@ -28,7 +28,7 @@ class FetchMetadataPolicyTest
       end
 
       def call(env)
-        env["action_dispatch.fetch_metadata_policy"] = ActionDispatch::ResourceIsolationPolicy.new do |policy|
+        env["action_dispatch.fetch_metadata_policy"] = ActionDispatch::FetchMetadataPolicy.new do |policy|
           policy.log_warning_on_failure = false
         end
         @app.call(env)
