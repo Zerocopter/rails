@@ -47,6 +47,7 @@ module ActionDispatch
     autoload_under "http" do
       autoload :ContentSecurityPolicy
       autoload :FeaturePolicy
+      autoload :FetchMetadataPolicy
       autoload :Request
       autoload :Response
     end

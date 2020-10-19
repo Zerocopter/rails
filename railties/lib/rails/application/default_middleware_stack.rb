@@ -70,6 +70,7 @@ module Rails
           unless config.api_only
             middleware.use ::ActionDispatch::ContentSecurityPolicy::Middleware
             middleware.use ::ActionDispatch::FeaturePolicy::Middleware
+            middleware.use ::ActionDispatch::FetchMetadataPolicy::Middleware, config.assets.prefix
           end
 
           middleware.use ::Rack::Head

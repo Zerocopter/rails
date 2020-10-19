@@ -64,6 +64,7 @@ module Rails
         @content_security_policy_report_only     = false
         @content_security_policy_nonce_generator = nil
         @content_security_policy_nonce_directives = nil
+        @fetch_metadata_policy                   = nil
         @require_master_key                      = false
         @loaded_config_version                   = nil
         @credentials                             = ActiveSupport::OrderedOptions.new
@@ -331,6 +332,14 @@ module Rails
           @feature_policy = ActionDispatch::FeaturePolicy.new(&block)
         else
           @feature_policy
+        end
+      end
+
+      def fetch_metadata_policy(&block)
+        if block_given?
+          @fetch_metadata_policy = ActionDispatch::FetchMetadataPolicy.new(&block)
+        else
+          @fetch_metadata_policy
         end
       end
 
